@@ -1,0 +1,38 @@
+package dct;
+
+import com.maxeler.maxcompiler.v2.kernelcompiler.Kernel;
+import com.maxeler.maxcompiler.v2.managers.BuildConfig;
+import com.maxeler.maxcompiler.v2.managers.BuildConfig.Effort;
+import com.maxeler.maxcompiler.v2.managers.BuildConfig.OptimizationGoal;
+import com.maxeler.maxcompiler.v2.managers.standard.Manager;
+import com.maxeler.maxcompiler.v2.managers.standard.Manager.IOType;
+
+public class DCTManager {
+
+	private static final String s_kernelName = "DCTInt8Kernel";
+
+	public static void main(String[] args) {
+		DCTEngineParameters params = new DCTEngineParameters(args);
+		Manager manager = new Manager(params);
+		manager.setClockFrequency(200);
+		manager.getCurrentKernelConfig().debug.setEnableLatencyAnnotation(true);
+		Kernel kernel   = new DCTKernel(manager.makeKernelParameters(s_kernelName));
+		manager.setKernel(kernel);
+		manager.setIO(IOType.ALL_CPU);
+		configBuild(manager, params);
+		manager.build();
+	}
+
+
+	private static void configBuild(Manager manager, DCTEngineParameters params) {
+		manager.setEnableStreamStatusBlocks(true);
+		BuildConfig buildConfig = manager.getBuildConfig();
+		buildConfig.setBuildEffort(Effort.VERY_HIGH);
+		buildConfig.setOptimizationGoal(OptimizationGoal.SPEED);
+		buildConfig.setMPPRCostTableSearchRange(params.getMPPRStartCT(),
+				params.getMPPREndCT());
+		buildConfig.setMPPRParallelism(params.getMPPRThreads());
+		buildConfig.setMPPRRetryNearMissesThreshold(params
+				.getMPPRRetryThreshold());
+	}
+}

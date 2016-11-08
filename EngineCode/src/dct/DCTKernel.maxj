@@ -1,0 +1,139 @@
+package dct;
+
+
+import maxpower.ops.AssociativeOp;
+import maxpower.ops.SumOp;
+import maxpower.utils.TreeReduce;
+
+import com.maxeler.maxcompiler.v2.kernelcompiler.Kernel;
+import com.maxeler.maxcompiler.v2.kernelcompiler.KernelParameters;
+import com.maxeler.maxcompiler.v2.kernelcompiler.RoundingMode;
+import com.maxeler.maxcompiler.v2.kernelcompiler.stdlib.memory.Memory;
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.base.DFEFix.SignMode;
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.base.DFEType;
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.base.DFEVar;
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.composite.DFEVector;
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.composite.DFEVectorType;
+import com.maxeler.maxcompiler.v2.utils.MathUtils;
+
+class DCTKernel extends Kernel {
+
+	private static final DFEType type_fix24 = dfeFix(10,14,SignMode.TWOSCOMPLEMENT);
+	private static final DFEType type_fix32 = dfeFix(16,16,SignMode.TWOSCOMPLEMENT);
+	private static final DFEType type_Int32 = dfeInt(32);
+	private static final DFEType type_Int8 = dfeUInt(8);
+
+	private static DFEVar pack2in8(DFEVar a, DFEVar b)
+	{
+		/* limit to signed 4 bits */
+		a &= 0x0f;
+		b &= 0x0f;
+		return((a << 4) | (b));
+	}
+
+
+	private static DFEVar pack4in32(DFEVar a,DFEVar b,DFEVar c,DFEVar d)
+	{
+		/* limit to signed 8 bits */
+		a &= 0xff;
+		b &= 0xff;
+		c &= 0xff;
+		d &= 0xff;
+		return((a << 24) | (b << 16) | (c << 8) | (d));
+	}
+
+	protected DCTKernel(KernelParameters parameters) {
+		super(parameters);
+		int Data_Dim = 8;
+
+		int addrBits = MathUtils.bitsToAddress(512);
+		DFEVar sum1;
+		DFEVectorType<DFEVar> vectorTypeFix32 = new DFEVectorType<DFEVar>(type_fix32, Data_Dim*Data_Dim);
+		DFEVectorType<DFEVar> vectorType_Int32 = new DFEVectorType<DFEVar>(type_Int32, Data_Dim*Data_Dim);
+		DFEVectorType<DFEVar> vectorType_Int8 = new DFEVectorType<DFEVar>(type_Int8, Data_Dim*Data_Dim);
+
+		DFEVectorType<DFEVar> vectorType_Int32Out = new DFEVectorType<DFEVar>(type_Int32, 4);
+
+		DFEVar[] temp2d = new DFEVar[Data_Dim*Data_Dim];
+		DFEVar[] sum_array = new DFEVar[Data_Dim];
+
+		DFEVector<DFEVar> dct_values = vectorType_Int32.newInstance(this);
+		DFEVector<DFEVar> result = vectorType_Int32Out.newInstance(this);
+		AssociativeOp<DFEVar> sum = new SumOp();
+
+		DFEVector<DFEVar> inVector = io.input("Input", vectorType_Int8);
+		DFEVector<DFEVar> cos = io.input("cos", vectorTypeFix32, control.count.pulse(1));
+
+		Memory<DFEVar> romDivBy2 = mem.alloc(type_Int32, 512);
+		romDivBy2.mapToCPU("romDivBy2");
+		Memory<DFEVar> romDivBy3 = mem.alloc(type_Int32, 512);
+		romDivBy3.mapToCPU("romDivBy3");
+
+		for (int i = 0; i < Data_Dim; i++) {
+			for (int j = 0; j < Data_Dim; j++) {
+				for (int k = 0; k < Data_Dim; k++) {
+					optimization.pushDSPFactor(1);
+					sum_array[k] = inVector[Data_Dim*i+k].cast(type_fix24) * cos[Data_Dim*k+j].cast(type_fix24);
+					optimization.popDSPFactor();
+				}
+				sum1 = TreeReduce.reduce(sum, sum_array);
+				temp2d[Data_Dim*i+j] = sum1;
+			}
+		}
+
+		for (int i = 0; i < Data_Dim; i++) {
+			for (int j = 0; j < Data_Dim; j++) {
+				for (int k = 0; k < Data_Dim; k++) {
+					optimization.pushDSPFactor(1);
+					sum_array[k] = cos[Data_Dim*k+i].cast(type_fix24) * temp2d[Data_Dim*k+j] ;
+					optimization.popDSPFactor();
+				}
+				sum1 = TreeReduce.reduce(sum, sum_array);
+				optimization.pushRoundingMode(RoundingMode.TONEAR);
+				dct_values[Data_Dim*i+j] <== sum1.cast(type_Int32);
+				optimization.popRoundingMode();
+			}
+		}
+
+		//Pack the dct results
+		DFEVar add2_3 = dct_values[2] + constant.var(dfeInt(32), 255);
+	    DFEVar add3_3 = dct_values[3]+ constant.var(dfeInt(32), 255);
+	    DFEVar add4_2 = dct_values[4].cast(dfeInt(9)) + constant.var(dfeInt(9), 255);
+	    DFEVar add5_2 = dct_values[5].cast(dfeInt(9)) + constant.var(dfeInt(9), 255);
+	    DFEVar add10_2 = dct_values[10].cast(dfeInt(9)) + constant.var(dfeInt(9), 255);
+	    DFEVar add16_3 = dct_values[16].cast(dfeInt(9)) + constant.var(dfeInt(9), 255);
+	    DFEVar add17_2 = dct_values[17].cast(dfeInt(9)) + constant.var(dfeInt(9), 255);
+	    DFEVar add18_2 = dct_values[18].cast(dfeInt(9)) + constant.var(dfeInt(9), 255);
+	    DFEVar add24_3 = dct_values[24].cast(dfeInt(9)) + constant.var(dfeInt(9), 255);
+	    DFEVar add32_2 = dct_values[32].cast(dfeInt(9)) + constant.var(dfeInt(9), 255);
+	    DFEVar add40_2 = dct_values[40].cast(dfeInt(9)) + constant.var(dfeInt(9), 255);
+
+		DFEVar res2_3 = romDivBy3.read(add2_3.cast(dfeUInt(addrBits)));
+		DFEVar res3_3 = romDivBy3.read(add3_3.cast(dfeUInt(addrBits)));
+		DFEVar res4_2 = romDivBy2.read(add4_2.cast(dfeUInt(addrBits))) & 0x0f;
+		DFEVar res5_2 = romDivBy2.read(add5_2.cast(dfeUInt(addrBits))) & 0x0f;
+		DFEVar res10_2 = romDivBy2.read(add10_2.cast(dfeUInt(addrBits))) & 0x0f;
+		DFEVar res16_3 = romDivBy3.read(add16_3.cast(dfeUInt(addrBits))) & 0x0f;
+		DFEVar res17_2 = romDivBy2.read(add17_2.cast(dfeUInt(addrBits))) & 0x0f;
+		DFEVar res18_2 = romDivBy2.read(add18_2.cast(dfeUInt(addrBits))) & 0x0f;
+		DFEVar res24_3 = romDivBy3.read(add24_3.cast(dfeUInt(addrBits))) & 0x0f;
+		DFEVar res32_2 = romDivBy2.read(add32_2.cast(dfeUInt(addrBits))) & 0x0f;
+		DFEVar res40_2 = romDivBy2.read(add40_2.cast(dfeUInt(addrBits))) & 0x0f;
+
+		result[0] <== (pack4in32(dct_values[0], dct_values[1], pack2in8(res2_3, res3_3),
+					pack2in8(res4_2, res5_2)));
+
+		result[1] <== (pack4in32(pack2in8(dct_values[6],dct_values[7]),
+					dct_values[8],dct_values[9], pack2in8(res10_2,dct_values[11])));
+
+		result[2] <== (pack4in32(pack2in8(dct_values[12], dct_values[13]),
+					pack2in8(res16_3, res17_2), pack2in8(res18_2, dct_values[19]),
+					pack2in8(res24_3, dct_values[25])));
+
+		result[3] <== (pack4in32(pack2in8(dct_values[26], dct_values[27]),
+					pack2in8(res32_2, dct_values[33]), pack2in8(res40_2, dct_values[41]),
+					pack2in8(dct_values[48] , dct_values[56])));
+
+		io.output("block_out_HW", result, vectorType_Int32Out);
+	}
+}
