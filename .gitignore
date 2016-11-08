@@ -1,0 +1,16 @@
+# MaxCompiler projects
+**/RunRules/*/maxfiles
+**/RunRules/*/objects
+**/RunRules/*/binaries
+**/RunRules/*/dist
+**/RunRules/*/debug
+**/RunRules/*/build.log
+**/RunRules/*/.maxcompiler-activity.be
+
+# C / C++
+*.d
+*.so
+*.a
+*.o
+
+
