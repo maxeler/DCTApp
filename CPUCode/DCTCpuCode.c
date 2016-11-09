@@ -256,8 +256,9 @@ int main(void) {
 		return (1);
 	}
 	printf("Done!\n");
-	for(i=0;i<final_dim;i=i+4)
-		fprintf(fd_out, "%d %d %d %d\n", HW_Results[i], HW_Results[i+1], HW_Results[i+2], HW_Results[i+3]);
+	for (i = 0; i < final_dim; i = i + 4)
+		fprintf(fd_out, "%d %d %d %d\n", HW_Results[i], HW_Results[i + 1],
+				HW_Results[i + 2], HW_Results[i + 3]);
 	fclose(fd_out);
 	printf("Done!\n");
 
