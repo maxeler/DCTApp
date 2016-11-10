@@ -2,11 +2,16 @@
 #include <stdio.h>
 #include "stdint.h"
 #include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "Maxfiles.h"
 #include "MaxSLiCInterface.h"
-#define         N               128
-#define         B               8
+
+#define B 8  // x and y dimension of the tile
 
 #define         ROUND(f)        (((f)<0.0) ? (int)((f)-0.5) : (int)((f)+0.5))
 
@@ -88,7 +93,7 @@ void Pack_Data(int index, int vect_in[], int vect_out[]) {
 					vect_in[41]), pack2in8(vect_in[48], vect_in[56]));
 }
 
-int Check_Data(int SW_Results[], int HW_Results[]) {
+int Check_Data(int N, int SW_Results[], int HW_Results[]) {
 	int failures = 0;
 	int dim = (N / B) * (N / B) * 4;
 	for (int i = 0; i < dim; i++) {
@@ -101,7 +106,45 @@ int Check_Data(int SW_Results[], int HW_Results[]) {
 	return failures;
 }
 
-int main(void) {
+static void printUsage(const char* program) {
+	fprintf(stdout, "Usage: %s [-i image-file-name] [-r image-dimension]\n", program);
+	fprintf(stdout, "   -i <file>     file containing image data\n");
+	fprintf(stdout, "   -r <number>   dimension of square image to be generated randomly; should be divisible by 8\n");
+}
+
+int main(int argc, char** argv) {
+
+	int img_dim = 1024;      // default x and y dimension of the image
+	char img_fname[512];
+	bool img_fname_given = false;
+
+	for (int i = 1; i < argc; ++i) {
+		const char* arg = argv[i];
+		if (strcmp(arg, "-i") == 0 && i + 1 < argc) {
+			strcpy(img_fname, argv[++i]);
+			img_fname_given = true;
+		} else if (strcmp(arg, "-r") == 0) {
+			if (!(i + 1 < argc)) {
+				fprintf(stderr, "Please specify the dimensions of the image to be randomly generated\n");
+				printUsage(argv[0]);
+				exit(1);
+			}
+			img_dim = atoi(argv[++i]);
+			if (img_dim % 8 != 0) {
+				fprintf(stderr, "The dimensions of the image should be divisible by 8\n");
+				exit(1);
+			}
+		} else {
+			if (strcmp(arg, "--help") != 0) {
+				fprintf(stderr, "Invalid command-line argument %s\n", arg);
+			}
+			printUsage(argv[0]);
+			exit(1);
+		}
+	}
+
+	const int N = img_dim;
+
 	float factor1;
 	float factor2;
 	float temp_cos;
@@ -137,8 +180,8 @@ int main(void) {
 	int i = 0;
 	int failures = 0;
 
-	printf("*********** DISCRETE COSINE TRANSFORMATION ***********\n");
-	printf("Initialization of the input data...\n");
+	printf("*********** DISCRETE COSINE TRANSFORM ***********\n");
+	printf("Initializing input data...\n");
 
 	/* Initialize the cosine matrices ("cos2" is the transpose of "cos1") */
 	factor1 = 2.0 * atan(1.0) / B;
@@ -153,33 +196,47 @@ int main(void) {
 		factor2 += factor1;
 	}
 
-	/* Open the file of the input data */
-	FILE *fd;
-	char buf[10];
-	char *res;
-	fd = fopen("input_16384x16384.dsp", "r");
-	//fd = fopen("input_128x128.dsp", "r");
-	if (fd == NULL) {
-		perror("Error during the opening of the input file!");
-		return (1);
+	if (img_fname_given) {
+	    // Read input data from file
+	    FILE *fd;
+	    char buf[10];
+	    char *res;
+	    struct stat stat_info;
+
+	    if (stat(img_fname, &stat_info)) {
+			fprintf(stderr, "Input image file %s does not exist\n", img_fname);
+			exit(1);
+	    }
+
+	    fd = fopen(img_fname, "r");
+	    if (fd == NULL) {
+		    fprintf(stderr, "Error while opening input image file %s!\n", img_fname);
+		    return (1);
+	    }
+
+	    fprintf(stdout, "Reading input image %s...\n", img_fname);
+	    while (1) {
+		    res = fgets(buf, 10, fd);
+		    if (res == NULL)
+			    break;
+		    Input_SW_image[i] = atoi(res);
+		    if (i == N * N - 1)
+			    break;
+		    i++;
+	    }
+	    fclose(fd);
+	    printf("Done!\n");
+	} else {
+		// Generate random image
+	    fprintf(stdout, "Generating random image of size %d x %d...\n", N, N);
+		srand(100);
+		for (i = 0; i < N * N; i++) {
+			Input_SW_image[i] = rand() % 256;
+		}
 	}
-	printf("Done!\n");
-	printf("Read the input image...\n");
-	while (1) {
-		res = fgets(buf, 10, fd);
-		if (res == NULL)
-			break;
-		Input_SW_image[i] = atoi(res);
-		if (i == N * N - 1)
-			break;
-		i++;
-	}
-	fclose(fd);
-	printf("Done!\n");
 
 	/*Compute the SW results */
-
-	printf("Compute the SW results...\n");
+	printf("Computing SW results...\n");
 	for (m = 0; m < num_blocks; m++) {
 		for (n = 0; n < num_blocks; n++) {
 			// Read next image block.
@@ -208,9 +265,6 @@ int main(void) {
 
 	printf("Done!\n");
 
-	//sleep(5)
-
-
 	/* Generate the ROM Content */
 	for (i = 0; i < 512; i++) {
 		romDivBy2[i] = (i - 255) / 2;
@@ -222,7 +276,7 @@ int main(void) {
 		cos2Fixed_32[m] = fromFloatToFixedPoint(cos2[m]);
 	}
 
-	printf("Compute the HW results...\n");
+	printf("Computing HW results...\n");
 	max_file_t *maxfile = DCT_init();
 	max_engine_t *engine = max_load(maxfile, "*");
 	max_actions_t* act = max_actions_init(maxfile, NULL);
@@ -245,22 +299,27 @@ int main(void) {
 
 	printf("Done!\n");
 
-	/*Check the correctness of the results*/
-	failures = Check_Data(SW_Results, HW_Results);
-	/* Write of the results into a file*/
-	FILE *fd_out;
-	//fd_out = fopen("output_16384x16384.dsp", "w");
-	fd_out = fopen("output_128x128.dsp", "w");
+	/* Check the correctness of the results */
+	failures = Check_Data(N, SW_Results, HW_Results);
+	/* Write the results into a file*/
+	char res_fname[512];
+    if (img_fname_given) {
+    	sprintf(res_fname, "output.dsp");
+    } else {
+    	sprintf(res_fname, "output_%dx%d.dsp", N, N);
+    }
+
+    fprintf(stderr, "Opening output file %s!\n", res_fname);
+	FILE *fd_out = fopen(res_fname, "w");
 	if (fd_out == NULL) {
-		perror("Error during the opening of the output file!");
+		fprintf(stderr, "Error while opening output file %s!\n", res_fname);
 		return (1);
 	}
-	printf("Done!\n");
+	fprintf(stdout, "Writing results to output file %s...\n", res_fname);
 	for (i = 0; i < final_dim; i = i + 4)
 		fprintf(fd_out, "%d %d %d %d\n", HW_Results[i], HW_Results[i + 1],
 				HW_Results[i + 2], HW_Results[i + 3]);
 	fclose(fd_out);
-	printf("Done!\n");
 
 	printf("SW time: %lf seconds\n", tSW / 1000000);
 	printf("HW time: %lf seconds\n", tHW / 1000000);
