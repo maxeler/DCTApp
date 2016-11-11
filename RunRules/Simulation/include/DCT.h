@@ -7,6 +7,9 @@ extern "C" {
 #endif /* __cplusplus */
 
 #define DCT_PCIE_ALIGNMENT (16)
+#define DCT_blockDim (8)
+#define DCT_romOffset (255)
+#define DCT_romDepth (512)
 
 
 /*----------------------------------------------------------------------------*/
