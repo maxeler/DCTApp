@@ -169,9 +169,10 @@ int main(int argc, char** argv) {
 	int *HW_Results = calloc(final_dim, sizeof(int));
 	int *SW_Results = calloc(final_dim, sizeof(int));
 
+	const int rom_dim = DCT_romDepth;
 	size_t sizeBytesInt = sizeBlock * sizeof(int);
-	int64_t *romDivBy2 = calloc(512, sizeof(int64_t));
-	int64_t *romDivBy3 = calloc(512, sizeof(int64_t));
+	int64_t *romDivBy2 = calloc(rom_dim, sizeof(int64_t));
+	int64_t *romDivBy3 = calloc(rom_dim, sizeof(int64_t));
 
 	int k;
 	int l;
@@ -282,9 +283,9 @@ int main(int argc, char** argv) {
 	max_actions_t* act = max_actions_init(maxfile, NULL);
 	max_queue_input(act, "cos", cos2Fixed_32, sizeBytesInt);
 	max_queue_input(act, "Input", Input_HW_image, N * N * sizeof(int8_t));
-	max_set_mem_range_uint64t(act, "DCTInt8Kernel", "romDivBy2", 0, 512,
+	max_set_mem_range_uint64t(act, "DCTInt8Kernel", "romDivBy2", 0, rom_dim,
 			romDivBy2);
-	max_set_mem_range_uint64t(act, "DCTInt8Kernel", "romDivBy3", 0, 512,
+	max_set_mem_range_uint64t(act, "DCTInt8Kernel", "romDivBy3", 0, rom_dim,
 			romDivBy3);
 	max_queue_output(act, "block_out_HW", HW_Results, final_dim * sizeof(int));
 	max_set_ticks(act, "DCTInt8Kernel", num_blocks * num_blocks);

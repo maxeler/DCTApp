@@ -22,9 +22,7 @@ class DCTKernel extends Kernel {
 	private static final DFEType type_fix32 = dfeFix(16,16,SignMode.TWOSCOMPLEMENT);
 	private static final DFEType type_Int32 = dfeInt(32);
 	private static final DFEType type_Int8 = dfeUInt(8);
-	private static final int  Data_Dim = 8; //Each sub-block has dimension 8*8
-	private static int  RAM_Dim = 512; //RAM contains the divisions by 2 and by 3 of the numbers [-255;+255]
-	private static int  RAM_Displacement= 255; //Displacement in order to have the right index for the RAM
+	private static final int  Data_Dim = 8; // Each sub-block has dimension 8 * 8
 
 	private static DFEVar pack2in8(DFEVar a, DFEVar b)
 	{
@@ -45,7 +43,13 @@ class DCTKernel extends Kernel {
 		return((a << 24) | (b << 16) | (c << 8) | (d));
 	}
 
-	protected DCTKernel(KernelParameters parameters) {
+
+	/**
+	 * @param parameters Kernel parameter
+	 * @param romDepth ROM depth for the mapped ROMS that contain the results of dividing the numbers in [-255;+255] by 2 and 3
+	 * @param romOffset Offset in the mapped ROMS (in order to have the right index)
+	 */
+	protected DCTKernel(KernelParameters parameters, final int romDepth, final int romOffset) {
 		super(parameters);
 
 		int addrBits = MathUtils.bitsToAddress(512);
@@ -66,9 +70,9 @@ class DCTKernel extends Kernel {
 		DFEVector<DFEVar> inVector = io.input("Input", vectorType_Int8);
 		DFEVector<DFEVar> cos = io.input("cos", vectorTypeFix32, control.count.pulse(1));
 
-		Memory<DFEVar> romDivBy2 = mem.alloc(type_Int32, RAM_Dim);
+		Memory<DFEVar> romDivBy2 = mem.alloc(type_Int32, romDepth);
 		romDivBy2.mapToCPU("romDivBy2");
-		Memory<DFEVar> romDivBy3 = mem.alloc(type_Int32, RAM_Dim);
+		Memory<DFEVar> romDivBy3 = mem.alloc(type_Int32, romDepth);
 		romDivBy3.mapToCPU("romDivBy3");
 
 		for (int i = 0; i < Data_Dim; i++) {
@@ -98,17 +102,17 @@ class DCTKernel extends Kernel {
 		}
 
 		//Pack the dct results
-		DFEVar add2_3 = dct_values[2] + constant.var(dfeInt(32), RAM_Displacement);
-	    DFEVar add3_3 = dct_values[3]+ constant.var(dfeInt(32), RAM_Displacement);
-	    DFEVar add4_2 = dct_values[4].cast(dfeInt(9)) + constant.var(dfeInt(9), RAM_Displacement);
-	    DFEVar add5_2 = dct_values[5].cast(dfeInt(9)) + constant.var(dfeInt(9), RAM_Displacement);
-	    DFEVar add10_2 = dct_values[10].cast(dfeInt(9)) + constant.var(dfeInt(9), RAM_Displacement);
-	    DFEVar add16_3 = dct_values[16].cast(dfeInt(9)) + constant.var(dfeInt(9), RAM_Displacement);
-	    DFEVar add17_2 = dct_values[17].cast(dfeInt(9)) + constant.var(dfeInt(9), RAM_Displacement);
-	    DFEVar add18_2 = dct_values[18].cast(dfeInt(9)) + constant.var(dfeInt(9), RAM_Displacement);
-	    DFEVar add24_3 = dct_values[24].cast(dfeInt(9)) + constant.var(dfeInt(9), RAM_Displacement);
-	    DFEVar add32_2 = dct_values[32].cast(dfeInt(9)) + constant.var(dfeInt(9), RAM_Displacement);
-	    DFEVar add40_2 = dct_values[40].cast(dfeInt(9)) + constant.var(dfeInt(9), RAM_Displacement);
+		DFEVar add2_3 = dct_values[2] + constant.var(dfeInt(32), romOffset);
+	    DFEVar add3_3 = dct_values[3]+ constant.var(dfeInt(32), romOffset);
+	    DFEVar add4_2 = dct_values[4].cast(dfeInt(9)) + constant.var(dfeInt(9), romOffset);
+	    DFEVar add5_2 = dct_values[5].cast(dfeInt(9)) + constant.var(dfeInt(9), romOffset);
+	    DFEVar add10_2 = dct_values[10].cast(dfeInt(9)) + constant.var(dfeInt(9), romOffset);
+	    DFEVar add16_3 = dct_values[16].cast(dfeInt(9)) + constant.var(dfeInt(9), romOffset);
+	    DFEVar add17_2 = dct_values[17].cast(dfeInt(9)) + constant.var(dfeInt(9), romOffset);
+	    DFEVar add18_2 = dct_values[18].cast(dfeInt(9)) + constant.var(dfeInt(9), romOffset);
+	    DFEVar add24_3 = dct_values[24].cast(dfeInt(9)) + constant.var(dfeInt(9), romOffset);
+	    DFEVar add32_2 = dct_values[32].cast(dfeInt(9)) + constant.var(dfeInt(9), romOffset);
+	    DFEVar add40_2 = dct_values[40].cast(dfeInt(9)) + constant.var(dfeInt(9), romOffset);
 
 		DFEVar res2_3 = romDivBy3.read(add2_3.cast(dfeUInt(addrBits)));
 		DFEVar res3_3 = romDivBy3.read(add3_3.cast(dfeUInt(addrBits)));

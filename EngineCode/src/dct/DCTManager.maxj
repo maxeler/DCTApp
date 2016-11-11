@@ -10,15 +10,20 @@ import com.maxeler.maxcompiler.v2.managers.standard.Manager.IOType;
 public class DCTManager {
 
 	private static final String s_kernelName = "DCTInt8Kernel";
+	private static final int romDepth = 512; // ROM depth
+	private static final int romOffset = 255; // Offset in ROMs
+
 
 	public static void main(String[] args) {
 		DCTEngineParameters params = new DCTEngineParameters(args);
 		Manager manager = new Manager(params);
 		manager.setClockFrequency(200);
 		manager.getCurrentKernelConfig().debug.setEnableLatencyAnnotation(true);
-		Kernel kernel   = new DCTKernel(manager.makeKernelParameters(s_kernelName));
+		Kernel kernel   = new DCTKernel(manager.makeKernelParameters(s_kernelName), romDepth, romOffset);
 		manager.setKernel(kernel);
 		manager.setIO(IOType.ALL_CPU);
+		manager.addMaxFileConstant("romDepth", romDepth);
+		manager.addMaxFileConstant("romOffset", romOffset);
 		configBuild(manager, params);
 		manager.build();
 	}
