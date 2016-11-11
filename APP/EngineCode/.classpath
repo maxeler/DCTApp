@@ -13,6 +13,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry exported="true" kind="lib" path="/network-raid/opt/maxq/maxq-ctl.jar"/>
-	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/maxpower-master"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/maxpower"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
