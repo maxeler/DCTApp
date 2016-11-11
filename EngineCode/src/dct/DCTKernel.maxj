@@ -22,25 +22,26 @@ class DCTKernel extends Kernel {
 	private static final DFEType type_fix32 = dfeFix(16,16,SignMode.TWOSCOMPLEMENT);
 	private static final DFEType type_Int32 = dfeInt(32);
 	private static final DFEType type_Int8 = dfeUInt(8);
-	private static final int  Data_Dim = 8; // Each sub-block has dimension 8 * 8
 
+
+	// TODO: optimize
 	private static DFEVar pack2in8(DFEVar a, DFEVar b)
 	{
 		/* limit to signed 4 bits */
 		a &= 0x0f;
 		b &= 0x0f;
-		return((a << 4) | (b));
+		return ((a << 4) | (b));
 	}
 
-
-	private static DFEVar pack4in32(DFEVar a,DFEVar b,DFEVar c,DFEVar d)
+	// TODO: optimize
+	private static DFEVar pack4in32(DFEVar a, DFEVar b, DFEVar c, DFEVar d)
 	{
 		/* limit to signed 8 bits */
 		a &= 0xff;
 		b &= 0xff;
 		c &= 0xff;
 		d &= 0xff;
-		return((a << 24) | (b << 16) | (c << 8) | (d));
+		return ((a << 24) | (b << 16) | (c << 8) | (d));
 	}
 
 
@@ -48,20 +49,21 @@ class DCTKernel extends Kernel {
 	 * @param parameters Kernel parameter
 	 * @param romDepth ROM depth for the mapped ROMS that contain the results of dividing the numbers in [-255;+255] by 2 and 3
 	 * @param romOffset Offset in the mapped ROMS (in order to have the right index)
+	 * @param blockDim Size of the x and y dimension of the matrix tile
 	 */
-	protected DCTKernel(KernelParameters parameters, final int romDepth, final int romOffset) {
+	protected DCTKernel(KernelParameters parameters, final int romDepth, final int romOffset, final int blockDim) {
 		super(parameters);
 
-		int addrBits = MathUtils.bitsToAddress(512);
+		int addrBits = MathUtils.bitsToAddress(romDepth);
 		DFEVar sum1;
-		DFEVectorType<DFEVar> vectorTypeFix32 = new DFEVectorType<DFEVar>(type_fix32, Data_Dim*Data_Dim);
-		DFEVectorType<DFEVar> vectorType_Int32 = new DFEVectorType<DFEVar>(type_Int32, Data_Dim*Data_Dim);
-		DFEVectorType<DFEVar> vectorType_Int8 = new DFEVectorType<DFEVar>(type_Int8, Data_Dim*Data_Dim);
+		DFEVectorType<DFEVar> vectorTypeFix32 = new DFEVectorType<DFEVar>(type_fix32, blockDim*blockDim);
+		DFEVectorType<DFEVar> vectorType_Int32 = new DFEVectorType<DFEVar>(type_Int32, blockDim*blockDim);
+		DFEVectorType<DFEVar> vectorType_Int8 = new DFEVectorType<DFEVar>(type_Int8, blockDim*blockDim);
 
 		DFEVectorType<DFEVar> vectorType_Int32Out = new DFEVectorType<DFEVar>(type_Int32, 4);
 
-		DFEVar[] temp2d = new DFEVar[Data_Dim*Data_Dim];
-		DFEVar[] sum_array = new DFEVar[Data_Dim];
+		DFEVar[] temp2d = new DFEVar[blockDim*blockDim];
+		DFEVar[] sum_array = new DFEVar[blockDim];
 
 		DFEVector<DFEVar> dct_values = vectorType_Int32.newInstance(this);
 		DFEVector<DFEVar> result = vectorType_Int32Out.newInstance(this);
@@ -75,28 +77,28 @@ class DCTKernel extends Kernel {
 		Memory<DFEVar> romDivBy3 = mem.alloc(type_Int32, romDepth);
 		romDivBy3.mapToCPU("romDivBy3");
 
-		for (int i = 0; i < Data_Dim; i++) {
-			for (int j = 0; j < Data_Dim; j++) {
-				for (int k = 0; k < Data_Dim; k++) {
+		for (int i = 0; i < blockDim; i++) {
+			for (int j = 0; j < blockDim; j++) {
+				for (int k = 0; k < blockDim; k++) {
 					optimization.pushDSPFactor(1);
-					sum_array[k] = inVector[Data_Dim*i+k].cast(type_fix24) * cos[Data_Dim*k+j].cast(type_fix24);
+					sum_array[k] = inVector[blockDim*i+k].cast(type_fix24) * cos[blockDim*k+j].cast(type_fix24);
 					optimization.popDSPFactor();
 				}
 				sum1 = TreeReduce.reduce(sum, sum_array);
-				temp2d[Data_Dim*i+j] = sum1;
+				temp2d[blockDim*i+j] = sum1;
 			}
 		}
 
-		for (int i = 0; i < Data_Dim; i++) {
-			for (int j = 0; j < Data_Dim; j++) {
-				for (int k = 0; k < Data_Dim; k++) {
+		for (int i = 0; i < blockDim; i++) {
+			for (int j = 0; j < blockDim; j++) {
+				for (int k = 0; k < blockDim; k++) {
 					optimization.pushDSPFactor(1);
-					sum_array[k] = cos[Data_Dim*k+i].cast(type_fix24) * temp2d[Data_Dim*k+j] ;
+					sum_array[k] = cos[blockDim*k+i].cast(type_fix24) * temp2d[blockDim*k+j] ;
 					optimization.popDSPFactor();
 				}
 				sum1 = TreeReduce.reduce(sum, sum_array);
 				optimization.pushRoundingMode(RoundingMode.TONEAR);
-				dct_values[Data_Dim*i+j] <== sum1.cast(type_Int32);
+				dct_values[blockDim*i+j] <== sum1.cast(type_Int32);
 				optimization.popRoundingMode();
 			}
 		}

@@ -11,7 +11,7 @@
 #include "Maxfiles.h"
 #include "MaxSLiCInterface.h"
 
-#define B 8  // x and y dimension of the tile
+#define B DCT_blockDim  // x and y dimension of the tile
 
 #define         ROUND(f)        (((f)<0.0) ? (int)((f)-0.5) : (int)((f)+0.5))
 
