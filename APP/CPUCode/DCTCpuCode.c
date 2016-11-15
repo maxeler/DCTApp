@@ -243,20 +243,20 @@ int main(int argc, char** argv) {
 			// Read next image block.
 			for (k = 0; k < B; k++) {
 				for (l = 0; l < B; l++) {
-					Input_block_SW[B * k + l] = Input_SW_image[B * (B * m + k)
+					Input_block_SW[B * k + l] = Input_SW_image[N * (B * m + k)
 							+ B * n + l];
 					// Create a linearized version of the input matrix for the HW computation
-					Input_HW_image[indexHW] = Input_SW_image[B * (B * m + k)
+					Input_HW_image[indexHW] = Input_SW_image[N * (B * m + k)
 							+ B * n + l];
 					indexHW++;
 				}
 			}
 
 			tSW0 = getTime();
-			for (i = 0; i < 100; i++) {
-				dct_SW(Input_block_SW, temp2d_SW, cos1, cos2, Output_block_SW);
-				Pack_Data(index_Pack, Output_block_SW, SW_Results);
-			}
+
+			dct_SW(Input_block_SW, temp2d_SW, cos1, cos2, Output_block_SW);
+			Pack_Data(index_Pack, Output_block_SW, SW_Results);
+
 			tSW1 = getTime();
 			tSW += tSW1 - tSW0;
 
@@ -291,8 +291,7 @@ int main(int argc, char** argv) {
 	max_set_ticks(act, "DCTInt8Kernel", num_blocks * num_blocks);
 
 	tHW0 = getTime();
-	for (i = 0; i < 100; i++)
-		max_run(engine, act);
+	max_run(engine, act);
 	tHW1 = getTime();
 	tHW = tHW1 - tHW0;
 
