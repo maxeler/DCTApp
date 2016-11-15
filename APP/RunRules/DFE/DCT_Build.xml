@@ -19,7 +19,6 @@
     </condition>
     <path id="maxclasspath">
         <pathelement path="${maxcompilerdirpath}"/>
-        <pathelement path="../../maxpower/bin"/>
         <pathelement path="${EnvClassPath}"/>
     </path>
     <path id="maxnetclasspath">
