@@ -42,6 +42,11 @@ Make sure the following environment variables are set correctly:
   * `MAXELEROSDIR`
   * `MAXCOMPILERDIR`
 
+The application uses Maxeler's standard library maxpower which is included as a git submodule. To clone maxpower, run the following commands:
+
+	git submodule init
+	git submodule update	
+
 
 To compile the application, go to ./APP/CPUCode/ and run:
 
