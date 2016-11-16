@@ -118,6 +118,11 @@ int main(int argc, char** argv) {
 	char img_fname[512];
 	bool img_fname_given = false;
 
+	if (argc < 2) {
+		printUsage(argv[0]);
+		exit(1);
+	}
+
 	for (int i = 1; i < argc; ++i) {
 		const char* arg = argv[i];
 		if (strcmp(arg, "-i") == 0 && i + 1 < argc) {
