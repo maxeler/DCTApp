@@ -18,6 +18,7 @@ The repository root directory contains the following items:
 - APP
 - DOCS
 - INPUT
+- maxpower
 - LICENCE.txt
 
 ### APP
@@ -31,6 +32,10 @@ Documentation of the project.
 ### INPUT
 
 Directory containing a sample input file for an image of size 128`x`128.
+
+### maxpower
+
+Directory containing a copy of [Maxeler standard library (MaxPower)](https://github.com/maxeler/maxpower "MaxPower")
   
 ### LICENSE.txt
 
