@@ -15,17 +15,10 @@
 
 #define         ROUND(f)        (((f)<0.0) ? (int)((f)-0.5) : (int)((f)+0.5))
 
-#define FIXED_POINT 16
-#define ONE  1 << FIXED_POINT
-
 unsigned long getTime() {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	return tv.tv_sec * 1000 * 1000 + tv.tv_usec;
-}
-
-int fromFloatToFixedPoint(float val) {
-	return (int) (val * (ONE));
 }
 
 /* Compute the SW dct function */
@@ -98,8 +91,8 @@ int Check_Data(int N, int SW_Results[], int HW_Results[]) {
 	int dim = (N / B) * (N / B) * 4;
 	for (int i = 0; i < dim; i++) {
 		if (abs(SW_Results[i] - HW_Results[i]) >= 1) {
-			printf("*** Error for index %d - SW: %d, HW: %d\n", i,
-					SW_Results[i], HW_Results[i]);
+			//printf("*** Error for index %d - SW: %d, HW: %d\n", i,
+			//		SW_Results[i], HW_Results[i]);
 			failures++;
 		}
 	}
@@ -114,7 +107,7 @@ static void printUsage(const char* program) {
 
 int main(int argc, char** argv) {
 
-	int img_dim = 1024;      // default x and y dimension of the image
+	int img_dim = 128;      // default x and y dimension of the image
 	char img_fname[512];
 	bool img_fname_given = false;
 
@@ -167,22 +160,13 @@ int main(int argc, char** argv) {
 
 	int indexHW = 0;
 	uint8_t *Input_HW_image = calloc(N * N, sizeof(uint8_t));
-	int *cos2Fixed_32 = calloc(sizeBlock, sizeof(int));
-
 	int index_Pack = 0;
 	int final_dim = (N / B) * (N / B) * 4;
 	int *HW_Results = calloc(final_dim, sizeof(int));
 	int *SW_Results = calloc(final_dim, sizeof(int));
+	size_t sizeBytesFloat = sizeBlock * sizeof(float);
 
-	const int rom_dim = DCT_romDepth;
-	size_t sizeBytesInt = sizeBlock * sizeof(int);
-	int64_t *romDivBy2 = calloc(rom_dim, sizeof(int64_t));
-	int64_t *romDivBy3 = calloc(rom_dim, sizeof(int64_t));
-
-	int k;
-	int l;
-	int m;
-	int n;
+	int k, l, m, n;
 	int i = 0;
 	int failures = 0;
 
@@ -239,6 +223,7 @@ int main(int argc, char** argv) {
 		for (i = 0; i < N * N; i++) {
 			Input_SW_image[i] = rand() % 256;
 		}
+	    printf("Done!\n");
 	}
 
 	/*Compute the SW results */
@@ -250,7 +235,7 @@ int main(int argc, char** argv) {
 				for (l = 0; l < B; l++) {
 					Input_block_SW[B * k + l] = Input_SW_image[N * (B * m + k)
 							+ B * n + l];
-					// Create a linearized version of the input matrix for the HW computation
+					// Create a linearised version of the input matrix for the HW computation
 					Input_HW_image[indexHW] = Input_SW_image[N * (B * m + k)
 							+ B * n + l];
 					indexHW++;
@@ -271,29 +256,14 @@ int main(int argc, char** argv) {
 
 	printf("Done!\n");
 
-	/* Generate the ROM Content */
-	for (i = 0; i < 512; i++) {
-		romDivBy2[i] = (i - 255) / 2;
-		romDivBy3[i] = (i - 255) / 3;
-	}
-
-	/* Convert the cos2 matrix from floating to fixed point */
-	for (m = 0; m < B * B; ++m) {
-		cos2Fixed_32[m] = fromFloatToFixedPoint(cos2[m]);
-	}
-
 	printf("Computing HW results...\n");
 	max_file_t *maxfile = DCT_init();
 	max_engine_t *engine = max_load(maxfile, "*");
 	max_actions_t* act = max_actions_init(maxfile, NULL);
-	max_queue_input(act, "cos", cos2Fixed_32, sizeBytesInt);
+	max_queue_input(act, "cos", cos2, sizeBytesFloat);
 	max_queue_input(act, "Input", Input_HW_image, N * N * sizeof(int8_t));
-	max_set_mem_range_uint64t(act, "DCTInt8Kernel", "romDivBy2", 0, rom_dim,
-			romDivBy2);
-	max_set_mem_range_uint64t(act, "DCTInt8Kernel", "romDivBy3", 0, rom_dim,
-			romDivBy3);
 	max_queue_output(act, "block_out_HW", HW_Results, final_dim * sizeof(int));
-	max_set_ticks(act, "DCTInt8Kernel", num_blocks * num_blocks);
+	max_set_ticks(act, "DCTKernel", num_blocks * num_blocks);
 
 	tHW0 = getTime();
 	max_run(engine, act);
@@ -301,11 +271,11 @@ int main(int argc, char** argv) {
 	tHW = tHW1 - tHW0;
 
 	max_unload(engine);
-
 	printf("Done!\n");
 
 	/* Check the correctness of the results */
 	failures = Check_Data(N, SW_Results, HW_Results);
+
 	/* Write the results into a file*/
 	char res_fname[512];
     if (img_fname_given) {
@@ -314,17 +284,19 @@ int main(int argc, char** argv) {
     	sprintf(res_fname, "output_%dx%d.dsp", N, N);
     }
 
-    fprintf(stderr, "Opening output file %s!\n", res_fname);
+    fprintf(stderr, "Opening output file %s...\n", res_fname);
 	FILE *fd_out = fopen(res_fname, "w");
 	if (fd_out == NULL) {
 		fprintf(stderr, "Error while opening output file %s!\n", res_fname);
 		return (1);
 	}
+	printf("Done!\n");
 	fprintf(stdout, "Writing results to output file %s...\n", res_fname);
 	for (i = 0; i < final_dim; i = i + 4)
 		fprintf(fd_out, "%d %d %d %d\n", HW_Results[i], HW_Results[i + 1],
 				HW_Results[i + 2], HW_Results[i + 3]);
 	fclose(fd_out);
+	printf("Done!\n");
 
 	printf("SW time: %lf seconds\n", tSW / 1000000);
 	printf("HW time: %lf seconds\n", tHW / 1000000);

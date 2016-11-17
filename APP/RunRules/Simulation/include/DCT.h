@@ -8,8 +8,6 @@ extern "C" {
 
 #define DCT_PCIE_ALIGNMENT (16)
 #define DCT_blockDim (8)
-#define DCT_romOffset (255)
-#define DCT_romDepth (512)
 
 
 /*----------------------------------------------------------------------------*/
@@ -22,26 +20,22 @@ extern "C" {
 /**
  * \brief Basic static function for the interface 'default'.
  * 
- * \param [in] ticks_DCTInt8Kernel The number of ticks for which kernel "DCTInt8Kernel" will run.
+ * \param [in] ticks_DCTKernel The number of ticks for which kernel "DCTKernel" will run.
  * \param [in] instream_Input Stream "Input".
  * \param [in] instream_size_Input The size of the stream instream_Input in bytes.
  * \param [in] instream_cos Stream "cos".
  * \param [in] instream_size_cos The size of the stream instream_cos in bytes.
  * \param [out] outstream_block_out_HW Stream "block_out_HW".
  * \param [in] outstream_size_block_out_HW The size of the stream outstream_block_out_HW in bytes.
- * \param [in] inmem_DCTInt8Kernel_romDivBy2 Mapped ROM inmem_DCTInt8Kernel_romDivBy2, should be of size (512 * sizeof(uint64_t)).
- * \param [in] inmem_DCTInt8Kernel_romDivBy3 Mapped ROM inmem_DCTInt8Kernel_romDivBy3, should be of size (512 * sizeof(uint64_t)).
  */
 void DCT(
-	uint64_t ticks_DCTInt8Kernel,
+	uint64_t ticks_DCTKernel,
 	const void *instream_Input,
 	size_t instream_size_Input,
 	const void *instream_cos,
 	size_t instream_size_cos,
 	void *outstream_block_out_HW,
-	size_t outstream_size_block_out_HW,
-	const uint64_t *inmem_DCTInt8Kernel_romDivBy2,
-	const uint64_t *inmem_DCTInt8Kernel_romDivBy3);
+	size_t outstream_size_block_out_HW);
 
 /**
  * \brief Basic static non-blocking function for the interface 'default'.
@@ -51,42 +45,36 @@ void DCT(
  * note that one of these *must* be called, so that associated memory can be released.
  * 
  * 
- * \param [in] ticks_DCTInt8Kernel The number of ticks for which kernel "DCTInt8Kernel" will run.
+ * \param [in] ticks_DCTKernel The number of ticks for which kernel "DCTKernel" will run.
  * \param [in] instream_Input Stream "Input".
  * \param [in] instream_size_Input The size of the stream instream_Input in bytes.
  * \param [in] instream_cos Stream "cos".
  * \param [in] instream_size_cos The size of the stream instream_cos in bytes.
  * \param [out] outstream_block_out_HW Stream "block_out_HW".
  * \param [in] outstream_size_block_out_HW The size of the stream outstream_block_out_HW in bytes.
- * \param [in] inmem_DCTInt8Kernel_romDivBy2 Mapped ROM inmem_DCTInt8Kernel_romDivBy2, should be of size (512 * sizeof(uint64_t)).
- * \param [in] inmem_DCTInt8Kernel_romDivBy3 Mapped ROM inmem_DCTInt8Kernel_romDivBy3, should be of size (512 * sizeof(uint64_t)).
  * \return A handle on the execution status, or NULL in case of error.
  */
 max_run_t *DCT_nonblock(
-	uint64_t ticks_DCTInt8Kernel,
+	uint64_t ticks_DCTKernel,
 	const void *instream_Input,
 	size_t instream_size_Input,
 	const void *instream_cos,
 	size_t instream_size_cos,
 	void *outstream_block_out_HW,
-	size_t outstream_size_block_out_HW,
-	const uint64_t *inmem_DCTInt8Kernel_romDivBy2,
-	const uint64_t *inmem_DCTInt8Kernel_romDivBy3);
+	size_t outstream_size_block_out_HW);
 
 /**
  * \brief Advanced static interface, structure for the engine interface 'default'
  * 
  */
 typedef struct { 
-	uint64_t ticks_DCTInt8Kernel; /**<  [in] The number of ticks for which kernel "DCTInt8Kernel" will run. */
+	uint64_t ticks_DCTKernel; /**<  [in] The number of ticks for which kernel "DCTKernel" will run. */
 	const void *instream_Input; /**<  [in] Stream "Input". */
 	size_t instream_size_Input; /**<  [in] The size of the stream instream_Input in bytes. */
 	const void *instream_cos; /**<  [in] Stream "cos". */
 	size_t instream_size_cos; /**<  [in] The size of the stream instream_cos in bytes. */
 	void *outstream_block_out_HW; /**<  [out] Stream "block_out_HW". */
 	size_t outstream_size_block_out_HW; /**<  [in] The size of the stream outstream_block_out_HW in bytes. */
-	const uint64_t *inmem_DCTInt8Kernel_romDivBy2; /**<  [in] Mapped ROM inmem_DCTInt8Kernel_romDivBy2, should be of size (512 * sizeof(uint64_t)). */
-	const uint64_t *inmem_DCTInt8Kernel_romDivBy3; /**<  [in] Mapped ROM inmem_DCTInt8Kernel_romDivBy3, should be of size (512 * sizeof(uint64_t)). */
 } DCT_actions_t;
 
 /**
