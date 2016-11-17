@@ -2,6 +2,9 @@
 **/RunRules/*/maxfiles
 **/EngineCode/bin
 
+**/.metadata
+**/.metadata*
+
 **/RunRules/*/objects
 **/RunRules/*/binaries
 **/RunRules/*/dist

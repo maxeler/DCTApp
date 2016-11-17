@@ -9,9 +9,7 @@ import com.maxeler.maxcompiler.v2.managers.standard.Manager.IOType;
 
 public class DCTManager {
 
-	private static final String s_kernelName = "DCTInt8Kernel";
-	private static final int romDepth = 512; // ROM depth
-	private static final int romOffset = 255; // Offset in ROMs
+	private static final String s_kernelName = "DCTKernel";
 	private static final int blockDim = 8; // Each sub-block (matrix tile) is of size 8 x 8
 
 
@@ -20,12 +18,9 @@ public class DCTManager {
 		Manager manager = new Manager(params);
 		manager.setClockFrequency(200);
 		manager.getCurrentKernelConfig().debug.setEnableLatencyAnnotation(true);
-		Kernel kernel   = new DCTKernel(manager.makeKernelParameters(s_kernelName),
-				                        romDepth, romOffset, blockDim);
+		Kernel kernel   = new DCTKernel(manager.makeKernelParameters(s_kernelName), blockDim);
 		manager.setKernel(kernel);
 		manager.setIO(IOType.ALL_CPU);
-		manager.addMaxFileConstant("romDepth", romDepth);
-		manager.addMaxFileConstant("romOffset", romOffset);
 		manager.addMaxFileConstant("blockDim", blockDim);
 		configBuild(manager, params);
 		manager.build();
