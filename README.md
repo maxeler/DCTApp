@@ -36,7 +36,7 @@ Directory containing a sample input file for an image of size 128`x`128.
 ### maxpower
 
 Directory containing a copy of [Maxeler standard library (MaxPower)](https://github.com/maxeler/maxpower "MaxPower")
-  
+
 ### LICENSE.txt
 
 License of the project.
@@ -50,7 +50,7 @@ Make sure the following environment variables are set correctly:
 The application uses Maxeler's standard library maxpower which is included as a git submodule. To clone maxpower, run the following commands:
 
 	git submodule init
-	git submodule update	
+	git submodule update
 
 
 To compile the application, go to ./APP/CPUCode/ and run:
@@ -92,3 +92,23 @@ A sample image of size N`x`N is provided under the ./INPUT directory.  The file 
 You can process an image of size N`x`N by providing the value of N on the command line. Example:
 
 	./APP/RunRules/Simulation/binaries/DCT -r 1024
+
+### Running application in simulation from command line
+
+To start the simulator run
+
+	maxcompilersim -d 1 -c MAIA -n dctapp start
+
+Export necessary environmental variables
+
+	export MAXELEROSDIR=$MAXCOMPILERDIR/lib/maxeleros-sim
+    export LD_PRELOAD=$MAXELEROSDIR/lib/libmaxeleros.so:$LD_PRELOAD
+    export SLIC_CONF="$SLIC_CONF;use_simulation=dctapp"
+
+Run the binary (see above for explanations), e.g.
+
+	./APP/RunRules/Simulation/binaries/DCT -i ./INPUT/input_128x128.dsp
+
+Stop the simulator
+
+	maxcompilersim -d 1 -c MAIA -n dctapp stop
