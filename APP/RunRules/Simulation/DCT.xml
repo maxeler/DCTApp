@@ -18,6 +18,7 @@
     <path id="maxclasspath">
         <pathelement path="${env.ANT_MAXELER_INTERNAL_MAXIDE_JARS}"/>
         <pathelement path="../RunRules/Simulation/dist/bin"/>
+        <pathelement path="../../maxpower/bin"/>
         <pathelement path="${maxcompilerdirpath}"/>
         <pathelement path="${EnvClassPath}"/>
     </path>
