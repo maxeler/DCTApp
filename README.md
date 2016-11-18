@@ -52,6 +52,17 @@ The application uses Maxeler's standard library maxpower which is included as a 
 	git submodule init
 	git submodule update
 
+### Compiling MaxJ code
+
+This is a pre-requisite step to compiling the application.
+
+	- open the MaxIDE,
+	- import the APP directory as a MaxCompiler project,
+	- import the maxpower directory as non-MaxCompiler project,
+	- build both maxpower and DCT projects,
+	- make sure APP/EngineCode/bin and maxpower/bin directores have been created.
+
+### Compiling the bitstream and the CPU binary
 
 To compile the application, go to ./APP/CPUCode/ and run:
 
