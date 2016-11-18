@@ -20,6 +20,7 @@
     <path id="maxclasspath">
         <pathelement path="${maxcompilerdirpath}"/>
         <pathelement path="${EnvClassPath}"/>
+        <pathelement path="../../maxpower/bin"/>
     </path>
     <path id="maxnetclasspath">
         <pathelement path="${maxcompilernetdirpath}"/>
