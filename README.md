@@ -56,11 +56,12 @@ The application uses Maxeler's standard library maxpower which is included as a 
 
 This is a pre-requisite step to compiling the application.
 
-	- open the MaxIDE,
-	- import the APP directory as a MaxCompiler project,
-	- import the maxpower directory as non-MaxCompiler project,
-	- build both maxpower and DCT projects,
-	- make sure APP/EngineCode/bin and maxpower/bin directores have been created.
+- open MaxIDE,
+- import the APP directory as a MaxCompiler project,
+- import the maxpower directory as non-MaxCompiler project,
+- build both maxpower and DCT projects,
+- make sure APP/EngineCode/bin and maxpower/bin directories have been created.
+
 
 ### Compiling the bitstream and the CPU binary
 
@@ -104,22 +105,22 @@ You can process an image of size N`x`N by providing the value of N on the comman
 
 	./APP/RunRules/Simulation/binaries/DCT -r 1024
 
-### Running application in simulation from command line
+### Running the application in simulation mode from the command line
 
-To start the simulator run
+To start the simulator, run:
 
 	maxcompilersim -d 1 -c MAIA -n dctapp start
 
-Export necessary environmental variables
+Export the necessary environmental variables:
 
 	export MAXELEROSDIR=$MAXCOMPILERDIR/lib/maxeleros-sim
-    export LD_PRELOAD=$MAXELEROSDIR/lib/libmaxeleros.so:$LD_PRELOAD
-    export SLIC_CONF="$SLIC_CONF;use_simulation=dctapp"
+	export LD_PRELOAD=$MAXELEROSDIR/lib/libmaxeleros.so:$LD_PRELOAD
+	export SLIC_CONF="$SLIC_CONF;use_simulation=dctapp"
 
 Run the binary (see above for explanations), e.g.
 
 	./APP/RunRules/Simulation/binaries/DCT -i ./INPUT/input_128x128.dsp
 
-Stop the simulator
+Stop the simulator:
 
 	maxcompilersim -d 1 -c MAIA -n dctapp stop
