@@ -19,4 +19,5 @@
 *.o
 *.*~
 
-
+# Generated output files
+output_*.dsp
