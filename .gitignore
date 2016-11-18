@@ -1,10 +1,10 @@
 # MaxCompiler projects
-**/RunRules/*/maxfiles
 **/EngineCode/bin
 
 **/.metadata
 **/.metadata*
 
+# **/RunRules/*/maxfiles
 **/RunRules/*/objects
 **/RunRules/*/binaries
 **/RunRules/*/dist
